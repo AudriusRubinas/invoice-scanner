@@ -1,0 +1,729 @@
+Invoice Scanner - HTML Interface Specifikacija
+Projekto aprašymas
+Sukurti modernų, responsive HTML puslapį sąskaitų faktūrų nuskaitymui, kuris integruojasi su n8n workflow per Webhook API. Puslapis leidžia vartotojui įkelti sąskaitų nuotraukas/PDF, matyti apdorojimo progresą, peržiūrėti rezultatus lentelėje ir generuoti CSV failą.
+
+Funkcionalumas
+1. Upload forma
+
+Drag & drop failų įkėlimas
+Arba "Browse" mygtukas failų pasirinkimui
+Priimami formatai: JPG, JPEG, PNG, PDF
+Multiple files palaikymas (iki 20 failų vienu metu)
+Failų dydžio limitas: 10MB per failą
+Preview įkeltų failų su galimybe pašalinti
+
+2. Papildomi formos laukai
+
+Darbuotojo vardas pavardė (text input, neprivalomas)
+DK sąskaita (text input, neprivalomas, default: "500101")
+
+3. Apdorojimo būsena
+
+Loading spinner/animacija kai vyksta apdorojimas
+Progress bar arba step indicator
+Apdorojimo laiko rodymas
+
+4. Rezultatų rodymas
+
+Lentelė su nuskaitytais duomenimis:
+
+Data (saleDate)
+Serija (series)
+Numeris (number)
+Klientas (clientName)
+Įmonės kodas (clientCode)
+Darbuotojas (employee)
+Suma be PVM (priceExclVat)
+PVM tarifas (vatRate)
+
+
+Bendra statistika:
+
+Sąskaitų skaičius
+Bendra suma
+
+
+Klaidos pranešimai jei nepavyko nuskaityti
+
+5. Veiksmai po apdorojimo
+
+Mygtukas "Atidaryti Google Sheet" (nuoroda)
+Mygtukas "Generuoti CSV" (triggerina CSV download)
+Mygtukas "Įkelti naujas sąskaitas" (reset forma)
+
+
+Dizaino reikalavimai
+Spalvų schema
+
+Primary: #667eea → #764ba2 (gradient)
+Success: #11998e → #38ef7d (gradient)
+Background: #1a1a2e → #16213e → #0f3460 (dark gradient)
+Text: #ffffff (primary), #a0a0a0 (secondary)
+Error: #ff4757
+Cards: rgba(255, 255, 255, 0.05) su backdrop-filter blur
+
+Stilius
+
+Modernus, dark theme
+Glassmorphism efektai
+Smooth animacijos ir transitions
+Border-radius: 12-20px
+Box-shadow su spalvotais atspalviais
+
+Responsive
+
+Mobile-first approach
+Breakpoints: 480px, 768px, 1024px, 1200px
+Lentelė horizontal scroll mažuose ekranuose
+
+
+Techninė architektūra
+Frontend
+
+Vanilla HTML5, CSS3, JavaScript (ES6+)
+Jokių framework'ų (gryna implementacija)
+Fetch API komunikacijai su n8n
+FormData failų siuntimui
+
+Backend (n8n Webhook)
+
+URL: https://pelningas.app.n8n.cloud/webhook/invoice-upload
+Method: POST
+Content-Type: multipart/form-data
+Response: JSON su apdorotais duomenimis
+
+CSV Webhook
+
+URL: https://pelningas.app.n8n.cloud/webhook/invoice-csv
+Method: GET
+Response: CSV failas (download)
+
+
+API Specifikacija
+Upload Request
+POST https://pelningas.app.n8n.cloud/webhook/invoice-upload
+Content-Type: multipart/form-data
+
+Fields:
+- files: File[] (multiple files)
+- employee: string (optional)
+- saleCorAcc: string (optional, default "500101")
+Upload Response (Success)
+json{
+  "success": true,
+  "message": "Sąskaitos sėkmingai apdorotos",
+  "data": {
+    "invoices": [
+      {
+        "saleDate": "2025-10-01",
+        "series": "TB",
+        "number": "18983",
+        "clientName": "UAB Įmonė",
+        "clientCode": "123456789",
+        "employee": "Jonas Jonaitis",
+        "priceExclVat": 468.20,
+        "vatRate": 21
+      }
+    ],
+    "summary": {
+      "totalCount": 5,
+      "totalAmount": 1234.56
+    }
+  },
+  "googleSheetUrl": "https://docs.google.com/spreadsheets/d/xxx/edit",
+  "csvWebhookUrl": "https://pelningas.app.n8n.cloud/webhook/invoice-csv"
+}
+Upload Response (Error)
+json{
+  "success": false,
+  "message": "Klaida apdorojant sąskaitas",
+  "errors": [
+    {
+      "fileName": "saskaita1.jpg",
+      "error": "Nepavyko nuskaityti teksto"
+    }
+  ]
+}
+
+Failų struktūra
+invoice-scanner/
+├── index.html          # Pagrindinis HTML
+├── css/
+│   └── styles.css      # Visi stiliai
+├── js/
+│   └── app.js          # JavaScript logika
+└── assets/
+    └── logo.svg        # Pelningas.lt logo (optional)
+
+HTML struktūra (index.html)
+html<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sąskaitų skaitytuvas | Pelningas.lt</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">Pelningas.lt</div>
+            <h1>Sąskaitų skaitytuvas</h1>
+            <p class="subtitle">Įkelkite sąskaitas ir gaukite duomenis automatiškai</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section id="upload-section" class="card">
+            <div class="upload-zone" id="upload-zone">
+                <div class="upload-icon">📄</div>
+                <h3>Įkelkite sąskaitas</h3>
+                <p>Nutempkite failus čia arba</p>
+                <button class="btn btn-secondary" id="browse-btn">Pasirinkite failus</button>
+                <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.pdf" hidden>
+                <p class="file-types">Priimami formatai: JPG, PNG, PDF (max 10MB)</p>
+            </div>
+
+            <!-- Preview uploaded files -->
+            <div id="file-preview" class="file-preview hidden">
+                <h4>Pasirinkti failai:</h4>
+                <ul id="file-list"></ul>
+            </div>
+
+            <!-- Additional fields -->
+            <div class="form-fields">
+                <div class="form-group">
+                    <label for="employee">Darbuotojo vardas pavardė</label>
+                    <input type="text" id="employee" placeholder="pvz. Jonas Jonaitis">
+                </div>
+                <div class="form-group">
+                    <label for="saleCorAcc">DK sąskaita</label>
+                    <input type="text" id="saleCorAcc" placeholder="500101" value="500101">
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg" id="submit-btn" disabled>
+                🚀 Apdoroti sąskaitas
+            </button>
+        </section>
+
+        <!-- Processing Section -->
+        <section id="processing-section" class="card hidden">
+            <div class="processing">
+                <div class="spinner"></div>
+                <h3>Apdorojamos sąskaitos...</h3>
+                <p id="processing-status">Nuskaitomas tekstas...</p>
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="card hidden">
+            <div class="results-header">
+                <div class="success-badge">
+                    <span class="icon">✅</span>
+                    <span>Sąskaitos sėkmingai nuskaitytos!</span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-bar">
+                <div class="stat">
+                    <div class="stat-value" id="total-count">0</div>
+                    <div class="stat-label">Sąskaitų</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="total-amount">0.00 €</div>
+                    <div class="stat-label">Bendra suma</div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-wrapper">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Serija</th>
+                            <th>Numeris</th>
+                            <th>Klientas</th>
+                            <th>Įm. kodas</th>
+                            <th>Darbuotojas</th>
+                            <th>Suma</th>
+                            <th>PVM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <!-- Dinamiškai generuojama -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="actions">
+                <a href="#" id="sheet-link" target="_blank" class="btn btn-secondary">
+                    📊 Atidaryti Google Sheet
+                </a>
+                <button class="btn btn-primary" id="csv-btn">
+                    📥 Generuoti CSV
+                </button>
+                <button class="btn btn-outline" id="reset-btn">
+                    🔄 Įkelti naujas
+                </button>
+            </div>
+        </section>
+
+        <!-- Error Section -->
+        <section id="error-section" class="card card-error hidden">
+            <div class="error-content">
+                <span class="error-icon">❌</span>
+                <h3>Įvyko klaida</h3>
+                <p id="error-message"></p>
+                <button class="btn btn-secondary" id="retry-btn">Bandyti dar kartą</button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2025 Pelningas.lt | Sąskaitų skaitytuvas</p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
+
+CSS stiliai (css/styles.css)
+Sukurti pilnus stilius pagal dizaino reikalavimus:
+
+Reset ir base stiliai
+Container ir layout
+Header stiliai
+Card komponentas (glassmorphism)
+Upload zone (drag & drop area)
+File preview lista
+Form fields stiliai
+Button stiliai (primary, secondary, outline, danger)
+Processing section su spinner animacija
+Progress bar animacija
+Stats bar stiliai
+Table stiliai (responsive)
+Actions section
+Error card stiliai
+Footer
+Responsive media queries
+Animacijos ir transitions
+
+Pagrindinės CSS kintamieji:
+css:root {
+    --primary-start: #667eea;
+    --primary-end: #764ba2;
+    --success-start: #11998e;
+    --success-end: #38ef7d;
+    --bg-start: #1a1a2e;
+    --bg-mid: #16213e;
+    --bg-end: #0f3460;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --error: #ff4757;
+    --card-bg: rgba(255, 255, 255, 0.05);
+    --border-color: rgba(255, 255, 255, 0.1);
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 20px;
+}
+
+JavaScript logika (js/app.js)
+Pagrindinės funkcijos:
+javascript// Configuration
+const CONFIG = {
+    uploadWebhookUrl: 'https://pelningas.app.n8n.cloud/webhook/invoice-upload',
+    csvWebhookUrl: 'https://pelningas.app.n8n.cloud/webhook/invoice-csv',
+    maxFileSize: 10 * 1024 * 1024, // 10MB
+    allowedTypes: ['image/jpeg', 'image/png', 'application/pdf'],
+    maxFiles: 20
+};
+
+// State
+let selectedFiles = [];
+let processedData = null;
+
+// DOM Elements
+const elements = {
+    uploadZone: document.getElementById('upload-zone'),
+    fileInput: document.getElementById('file-input'),
+    browseBtn: document.getElementById('browse-btn'),
+    filePreview: document.getElementById('file-preview'),
+    fileList: document.getElementById('file-list'),
+    submitBtn: document.getElementById('submit-btn'),
+    employeeInput: document.getElementById('employee'),
+    saleCorAccInput: document.getElementById('saleCorAcc'),
+    
+    uploadSection: document.getElementById('upload-section'),
+    processingSection: document.getElementById('processing-section'),
+    resultsSection: document.getElementById('results-section'),
+    errorSection: document.getElementById('error-section'),
+    
+    processingStatus: document.getElementById('processing-status'),
+    progress: document.getElementById('progress'),
+    
+    totalCount: document.getElementById('total-count'),
+    totalAmount: document.getElementById('total-amount'),
+    resultsBody: document.getElementById('results-body'),
+    
+    sheetLink: document.getElementById('sheet-link'),
+    csvBtn: document.getElementById('csv-btn'),
+    resetBtn: document.getElementById('reset-btn'),
+    retryBtn: document.getElementById('retry-btn'),
+    errorMessage: document.getElementById('error-message')
+};
+
+// Initialize
+function init() {
+    setupEventListeners();
+    setupDragAndDrop();
+}
+
+// Event Listeners
+function setupEventListeners() {
+    elements.browseBtn.addEventListener('click', () => elements.fileInput.click());
+    elements.fileInput.addEventListener('change', handleFileSelect);
+    elements.submitBtn.addEventListener('click', handleSubmit);
+    elements.csvBtn.addEventListener('click', handleCsvDownload);
+    elements.resetBtn.addEventListener('click', resetForm);
+    elements.retryBtn.addEventListener('click', resetForm);
+}
+
+// Drag & Drop
+function setupDragAndDrop() {
+    const zone = elements.uploadZone;
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+        zone.addEventListener(event, preventDefaults);
+    });
+    
+    ['dragenter', 'dragover'].forEach(event => {
+        zone.addEventListener(event, () => zone.classList.add('drag-over'));
+    });
+    
+    ['dragleave', 'drop'].forEach(event => {
+        zone.addEventListener(event, () => zone.classList.remove('drag-over'));
+    });
+    
+    zone.addEventListener('drop', handleDrop);
+}
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+// File Handling
+function handleFileSelect(e) {
+    const files = Array.from(e.target.files);
+    addFiles(files);
+}
+
+function handleDrop(e) {
+    const files = Array.from(e.dataTransfer.files);
+    addFiles(files);
+}
+
+function addFiles(files) {
+    const validFiles = files.filter(file => validateFile(file));
+    
+    if (selectedFiles.length + validFiles.length > CONFIG.maxFiles) {
+        showError(`Maksimalus failų skaičius: ${CONFIG.maxFiles}`);
+        return;
+    }
+    
+    selectedFiles = [...selectedFiles, ...validFiles];
+    updateFilePreview();
+    updateSubmitButton();
+}
+
+function validateFile(file) {
+    if (!CONFIG.allowedTypes.includes(file.type)) {
+        showError(`Netinkamas failo tipas: ${file.name}`);
+        return false;
+    }
+    if (file.size > CONFIG.maxFileSize) {
+        showError(`Failas per didelis: ${file.name} (max 10MB)`);
+        return false;
+    }
+    return true;
+}
+
+function removeFile(index) {
+    selectedFiles.splice(index, 1);
+    updateFilePreview();
+    updateSubmitButton();
+}
+
+function updateFilePreview() {
+    if (selectedFiles.length === 0) {
+        elements.filePreview.classList.add('hidden');
+        return;
+    }
+    
+    elements.filePreview.classList.remove('hidden');
+    elements.fileList.innerHTML = selectedFiles.map((file, index) => `
+        <li>
+            <span class="file-name">${file.name}</span>
+            <span class="file-size">${formatFileSize(file.size)}</span>
+            <button class="remove-file" onclick="removeFile(${index})">×</button>
+        </li>
+    `).join('');
+}
+
+function updateSubmitButton() {
+    elements.submitBtn.disabled = selectedFiles.length === 0;
+}
+
+// Form Submission
+async function handleSubmit() {
+    showSection('processing');
+    
+    const formData = new FormData();
+    
+    // Add files
+    selectedFiles.forEach(file => {
+        formData.append('files', file);
+    });
+    
+    // Add form fields
+    formData.append('employee', elements.employeeInput.value);
+    formData.append('saleCorAcc', elements.saleCorAccInput.value || '500101');
+    
+    try {
+        updateProgress(20, 'Siunčiami failai...');
+        
+        const response = await fetch(CONFIG.uploadWebhookUrl, {
+            method: 'POST',
+            body: formData
+        });
+        
+        updateProgress(60, 'Apdorojami duomenys...');
+        
+        const data = await response.json();
+        
+        updateProgress(100, 'Baigta!');
+        
+        if (data.success) {
+            processedData = data;
+            setTimeout(() => showResults(data), 500);
+        } else {
+            showError(data.message || 'Įvyko nežinoma klaida');
+        }
+    } catch (error) {
+        showError('Nepavyko prisijungti prie serverio: ' + error.message);
+    }
+}
+
+// Progress
+function updateProgress(percent, status) {
+    elements.progress.style.width = percent + '%';
+    elements.processingStatus.textContent = status;
+}
+
+// Results
+function showResults(data) {
+    showSection('results');
+    
+    // Update stats
+    elements.totalCount.textContent = data.data.summary.totalCount;
+    elements.totalAmount.textContent = data.data.summary.totalAmount.toFixed(2) + ' €';
+    
+    // Update table
+    elements.resultsBody.innerHTML = data.data.invoices.map(invoice => `
+        <tr>
+            <td>${invoice.saleDate}</td>
+            <td>${invoice.series}</td>
+            <td>${invoice.number}</td>
+            <td>${invoice.clientName}</td>
+            <td>${invoice.clientCode}</td>
+            <td>${invoice.employee}</td>
+            <td class="amount">${invoice.priceExclVat.toFixed(2)} €</td>
+            <td>${invoice.vatRate}%</td>
+        </tr>
+    `).join('');
+    
+    // Update links
+    elements.sheetLink.href = data.googleSheetUrl;
+}
+
+// CSV Download
+async function handleCsvDownload() {
+    try {
+        const response = await fetch(CONFIG.csvWebhookUrl);
+        const blob = await response.blob();
+        
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `saskaitos_${new Date().toISOString().split('T')[0]}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+    } catch (error) {
+        showError('Nepavyko sugeneruoti CSV: ' + error.message);
+    }
+}
+
+// Section Management
+function showSection(section) {
+    ['upload', 'processing', 'results', 'error'].forEach(s => {
+        elements[s + 'Section'].classList.add('hidden');
+    });
+    elements[section + 'Section'].classList.remove('hidden');
+}
+
+// Error Handling
+function showError(message) {
+    showSection('error');
+    elements.errorMessage.textContent = message;
+}
+
+// Reset
+function resetForm() {
+    selectedFiles = [];
+    processedData = null;
+    elements.fileInput.value = '';
+    elements.employeeInput.value = '';
+    elements.saleCorAccInput.value = '500101';
+    updateFilePreview();
+    updateSubmitButton();
+    updateProgress(0, '');
+    showSection('upload');
+}
+
+// Utilities
+function formatFileSize(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+// Make removeFile global for onclick
+window.removeFile = removeFile;
+
+// Initialize on DOM ready
+document.addEventListener('DOMContentLoaded', init);
+
+n8n Webhook konfigūracija
+Naujas Webhook node (vietoj Form Trigger):
+NustatymasReikšmėHTTP MethodPOSTPathinvoice-uploadAuthenticationNoneRespondUsing 'Respond to Webhook' NodeBinary Propertyfiles
+Response node po apdorojimo:
+Sukurti Code node kuris formuoja JSON response:
+javascriptconst items = $input.all();
+
+// Apskaičiuojam sumą
+let totalAmount = 0;
+const invoices = items.map(item => {
+    const price = parseFloat(item.json['priceExclVat*'] || item.json.priceExclVat) || 0;
+    totalAmount += price;
+    
+    return {
+        saleDate: item.json['saleDate*'] || item.json.saleDate || '',
+        series: item.json['series*'] || item.json.series || '',
+        number: item.json['number*'] || item.json.number || '',
+        clientName: item.json['clientName*'] || item.json.clientName || '',
+        clientCode: item.json['clientCode'] || item.json.clientCode || '',
+        employee: item.json['employee*'] || item.json.employee || '',
+        priceExclVat: price,
+        vatRate: parseInt(item.json['vatRate'] || item.json.vatRate) || 21
+    };
+});
+
+return [{
+    json: {
+        success: true,
+        message: 'Sąskaitos sėkmingai apdorotos',
+        data: {
+            invoices: invoices,
+            summary: {
+                totalCount: invoices.length,
+                totalAmount: totalAmount
+            }
+        },
+        googleSheetUrl: 'https://docs.google.com/spreadsheets/d/14HOchUc9YURdvoyYMMvCRf_M1_uf5L8U28pUr5wX3cc/edit',
+        csvWebhookUrl: 'https://pelningas.app.n8n.cloud/webhook/invoice-csv'
+    }
+}];
+Respond to Webhook (JSON):
+NustatymasReikšmėRespond WithJSONResponse Body{{ $json }}
+Response Headers:
+NameValueAccess-Control-Allow-Origin*Access-Control-Allow-MethodsPOST, GET, OPTIONSAccess-Control-Allow-HeadersContent-Type
+
+CSV Webhook
+Webhook node:
+NustatymasReikšmėHTTP MethodGETPathinvoice-csvRespondUsing 'Respond to Webhook' Node
+Flow:
+Webhook (GET) → Google Sheets (Read) → Convert to File (CSV) → Respond to Webhook (Binary)
+Respond to Webhook (CSV):
+NustatymasReikšmėRespond WithBinaryResponse Body{{ $binary.data }}
+Response Headers:
+NameValueContent-Typetext/csv; charset=utf-8Content-Dispositionattachment; filename="saskaitos.csv"Access-Control-Allow-Origin*
+
+Hostinimas (GitHub Pages)
+Žingsniai:
+
+Sukurti GitHub repository (pvz. invoice-scanner)
+Įkelti failus (index.html, css/, js/)
+Settings → Pages → Source: main branch
+Gauti URL: https://username.github.io/invoice-scanner
+
+Alternatyvos:
+
+Netlify: Drag & drop deployment
+Vercel: GitHub integration
+Cloudflare Pages: Nemokamas CDN
+
+
+Testavimas
+Lokalus testavimas:
+bash# Python
+python -m http.server 8000
+
+# Node.js
+npx serve
+
+# VS Code Live Server extension
+CORS testavimas:
+
+n8n Webhook turi turėti CORS headers
+Arba naudoti proxy development metu
+
+
+Papildomi patobulinimai (ateičiai)
+
+Dark/Light mode toggle
+Failų preview thumbnails
+Batch progress (1/5 apdorota...)
+Export to Excel mygtukas
+History - ankstesni uploads
+User authentication
+Email notifications
+Mobile app (PWA)
+
+
+Failų checklist
+
+ index.html - pagrindinis puslapis
+ css/styles.css - visi stiliai
+ js/app.js - JavaScript logika
+ README.md - dokumentacija
+ .gitignore - Git ignore failas
+
+
+Kontaktai
+Projekto savininkas: Audrius Rubinas
+Įmonė: Pelningas.lt (Pelningi Sprendimai, MB)
+
+
+Productions URL - https://pelningas.app.n8n.cloud/webhook/57b99909-f851-4a27-8cd2-cb800d06d135

@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sąskaitų skaitytuvas | Pelningas.lt</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <!-- SheetJS library for Excel generation -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="logo">Pelningas.lt</div>
+            <h1>Sąskaitų skaitytuvas</h1>
+            <p class="subtitle">Įkelkite sąskaitas ir gaukite duomenis automatiškai</p>
+        </header>
+
+        <!-- Upload Section -->
+        <section id="upload-section" class="card">
+            <div class="upload-zone" id="upload-zone">
+                <div class="upload-icon">📄</div>
+                <h3>Įkelkite sąskaitas</h3>
+                <p>Nutempkite failus čia arba</p>
+                <button class="btn btn-secondary" id="browse-btn">Pasirinkite failus</button>
+                <input type="file" id="file-input" multiple accept=".jpg,.jpeg,.png,.pdf" hidden>
+                <p class="file-types">Priimami formatai: JPG, PNG, PDF (max 10MB)</p>
+            </div>
+
+            <!-- Preview uploaded files -->
+            <div id="file-preview" class="file-preview hidden">
+                <h4>Pasirinkti failai:</h4>
+                <ul id="file-list"></ul>
+            </div>
+
+            <!-- Additional fields -->
+            <div class="form-fields">
+                <div class="form-group">
+                    <label for="employee">Darbuotojo vardas pavardė</label>
+                    <input type="text" id="employee" placeholder="pvz. Jonas Jonaitis">
+                </div>
+                <div class="form-group">
+                    <label for="saleCorAcc">DK sąskaita</label>
+                    <input type="text" id="saleCorAcc" placeholder="500101" value="500101">
+                </div>
+            </div>
+
+            <button class="btn btn-primary btn-lg" id="submit-btn" disabled>
+                🚀 Apdoroti sąskaitas
+            </button>
+        </section>
+
+        <!-- Processing Section -->
+        <section id="processing-section" class="card hidden">
+            <div class="processing">
+                <div class="spinner"></div>
+                <h3>Apdorojamos sąskaitos...</h3>
+                <p id="processing-status">Nuskaitomas tekstas...</p>
+                <div class="progress-bar">
+                    <div class="progress" id="progress"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Results Section -->
+        <section id="results-section" class="card hidden">
+            <div class="results-header">
+                <div class="success-badge">
+                    <span class="icon">✅</span>
+                    <span>Sąskaitos sėkmingai nuskaitytos!</span>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="stats-bar">
+                <div class="stat">
+                    <div class="stat-value" id="total-count">0</div>
+                    <div class="stat-label">Sąskaitų</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="total-amount">0.00 €</div>
+                    <div class="stat-label">Bendra suma</div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-wrapper">
+                <table id="results-table">
+                    <thead>
+                        <tr>
+                            <th>Data</th>
+                            <th>Serija</th>
+                            <th>Numeris</th>
+                            <th>Klientas</th>
+                            <th>Įm. kodas</th>
+                            <th>Darbuotojas</th>
+                            <th>Suma</th>
+                            <th>PVM</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <!-- Dinamiškai generuojama -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="actions">
+                <a href="#" id="sheet-link" target="_blank" class="btn btn-secondary">
+                    📊 Atidaryti Google Sheet
+                </a>
+                <button class="btn btn-primary" id="csv-btn">
+                    📥 Eksportuoti Excel
+                </button>
+                <button class="btn btn-outline" id="reset-btn">
+                    🔄 Įkelti naujas
+                </button>
+            </div>
+        </section>
+
+        <!-- Error Section -->
+        <section id="error-section" class="card card-error hidden">
+            <div class="error-content">
+                <span class="error-icon">❌</span>
+                <h3>Įvyko klaida</h3>
+                <p id="error-message"></p>
+                <button class="btn btn-secondary" id="retry-btn">Bandyti dar kartą</button>
+            </div>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>© 2025 Pelningas.lt | Sąskaitų skaitytuvas</p>
+        </footer>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
