@@ -46,6 +46,30 @@ const elements = {
 function init() {
     setupEventListeners();
     setupDragAndDrop();
+    displayUsername();
+}
+
+// Display username in header
+function displayUsername() {
+    const authData = localStorage.getItem('invoice_auth') || sessionStorage.getItem('invoice_auth');
+    if (authData) {
+        try {
+            const parsed = JSON.parse(authData);
+            const usernameDisplay = document.getElementById('username-display');
+            if (usernameDisplay) {
+                usernameDisplay.textContent = parsed.username;
+            }
+        } catch (e) {
+            console.error('Error parsing auth data:', e);
+        }
+    }
+}
+
+// Logout function
+function handleLogout() {
+    localStorage.removeItem('invoice_auth');
+    sessionStorage.removeItem('invoice_auth');
+    window.location.href = 'auth.html';
 }
 
 // Event Listeners
@@ -56,6 +80,12 @@ function setupEventListeners() {
     elements.csvBtn.addEventListener('click', handleCsvDownload);
     elements.resetBtn.addEventListener('click', resetForm);
     elements.retryBtn.addEventListener('click', resetForm);
+    
+    // Logout button
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', handleLogout);
+    }
 }
 
 // Drag & Drop

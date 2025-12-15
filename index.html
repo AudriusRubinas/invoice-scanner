@@ -7,12 +7,52 @@
     <link rel="stylesheet" href="css/styles.css">
     <!-- SheetJS library for Excel generation -->
     <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <!-- Authentication Check -->
+    <script>
+        // Patikrinti autentifikaciją prieš įkeliant puslapį
+        (function() {
+            function isAuthenticated() {
+                const localData = localStorage.getItem('invoice_auth');
+                const sessionData = sessionStorage.getItem('invoice_auth');
+                const authData = localData || sessionData;
+                
+                if (!authData) return false;
+
+                try {
+                    const parsed = JSON.parse(authData);
+                    const now = Date.now();
+                    const elapsed = now - parsed.timestamp;
+
+                    if (elapsed < parsed.expiresIn) {
+                        return true;
+                    }
+
+                    // Sesija pasibaigė
+                    localStorage.removeItem('invoice_auth');
+                    sessionStorage.removeItem('invoice_auth');
+                    return false;
+                } catch (e) {
+                    return false;
+                }
+            }
+
+            // Jei neprisijungęs - redirect į auth
+            if (!isAuthenticated()) {
+                window.location.href = 'auth.html';
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="container">
         <!-- Header -->
         <header class="header">
-            <div class="logo">Pelningas.lt</div>
+            <div class="header-top">
+                <div class="logo">Pelningas.lt</div>
+                <button class="btn-logout" id="logout-btn" title="Atsijungti">
+                    <span id="username-display"></span> | Atsijungti
+                </button>
+            </div>
             <h1>Sąskaitų skaitytuvas</h1>
             <p class="subtitle">Įkelkite sąskaitas ir gaukite duomenis automatiškai</p>
         </header>

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="lt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prisijungimas - Invoice Scanner</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 100%;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: #667eea;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .logo p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            color: #333;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 15px;
+            transition: all 0.3s;
+            background: white;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-login:active {
+            transform: translateY(0);
+        }
+
+        .error-message {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            margin-top: 15px;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: auto;
+            margin-right: 8px;
+        }
+
+        .remember-me label {
+            margin-bottom: 0;
+            font-weight: normal;
+            font-size: 14px;
+            color: #666;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #999;
+            font-size: 12px;
+        }
+
+        @media (max-width: 480px) {
+            .login-container {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <h1>🧾 Invoice Scanner</h1>
+            <p>Prisijunkite norėdami tęsti</p>
+        </div>
+
+        <div class="error-message" id="error-message">
+            Neteisingas vartotojo vardas arba slaptažodis
+        </div>
+
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username">Vartotojo vardas</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    placeholder="Įveskite vartotojo vardą"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Slaptažodis</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Įveskite slaptažodį"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <div class="remember-me">
+                <input type="checkbox" id="remember" name="remember" checked>
+                <label for="remember">Prisiminti mane</label>
+            </div>
+
+            <button type="submit" class="btn-login">
+                Prisijungti
+            </button>
+        </form>
+
+        <div class="footer">
+            © 2025 Pelningas.lt | Sąskaitų skaitytuvas
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // KONFIGŪRACIJA
+        // ============================================
+        const AUTH_CONFIG = {
+            // n8n authentication webhook URL
+            authWebhookUrl: 'https://pelningas.app.n8n.cloud/webhook/auth',
+            
+            // Sesijos galiojimo laikas (dienomis)
+            sessionDays: 30
+        };
+        // ============================================
+
+        const form = document.getElementById('login-form');
+        const errorMessage = document.getElementById('error-message');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const rememberCheckbox = document.getElementById('remember');
+
+        // Patikrinkite ar jau prisijungęs
+        window.addEventListener('DOMContentLoaded', () => {
+            if (isAuthenticated()) {
+                redirectToApp();
+            }
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            const remember = rememberCheckbox.checked;
+
+            // Disable button during validation
+            const submitBtn = form.querySelector('.btn-login');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Tikrinama...';
+
+            const isValid = await validateCredentials(username, password);
+
+            if (isValid) {
+                // Sėkmingai prisijungta
+                saveSession(username, remember);
+                redirectToApp();
+            } else {
+                // Klaida
+                showError();
+                passwordInput.value = '';
+                passwordInput.focus();
+                
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Prisijungti';
+            }
+        });
+
+        // Validuoti kredencialus per n8n
+        async function validateCredentials(username, password) {
+            try {
+                const response = await fetch(AUTH_CONFIG.authWebhookUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username: username,
+                        password: password
+                    })
+                });
+
+                if (!response.ok) {
+                    console.error('Auth webhook error:', response.status);
+                    return false;
+                }
+
+                const data = await response.json();
+                
+                // n8n grąžina array, paimame pirmą elementą
+                const result = Array.isArray(data) ? data[0] : data;
+                
+                return result.success === true;
+            } catch (error) {
+                console.error('Authentication error:', error);
+                return false;
+            }
+        }
+
+        // Išsaugoti sesiją
+        function saveSession(username, remember) {
+            const sessionData = {
+                username: username,
+                timestamp: Date.now(),
+                expiresIn: remember ? AUTH_CONFIG.sessionDays * 24 * 60 * 60 * 1000 : 24 * 60 * 60 * 1000
+            };
+
+            if (remember) {
+                localStorage.setItem('invoice_auth', JSON.stringify(sessionData));
+            } else {
+                sessionStorage.setItem('invoice_auth', JSON.stringify(sessionData));
+            }
+        }
+
+        // Patikrinti ar autentifikuotas
+        function isAuthenticated() {
+            const localData = localStorage.getItem('invoice_auth');
+            const sessionData = sessionStorage.getItem('invoice_auth');
+            
+            const authData = localData || sessionData;
+            
+            if (!authData) return false;
+
+            try {
+                const parsed = JSON.parse(authData);
+                const now = Date.now();
+                const elapsed = now - parsed.timestamp;
+
+                // Patikrinti ar sesija galioja
+                if (elapsed < parsed.expiresIn) {
+                    return true;
+                }
+
+                // Sesija pasibaigė
+                clearSession();
+                return false;
+            } catch (e) {
+                clearSession();
+                return false;
+            }
+        }
+
+        // Išvalyti sesiją
+        function clearSession() {
+            localStorage.removeItem('invoice_auth');
+            sessionStorage.removeItem('invoice_auth');
+        }
+
+        // Rodyti klaidą
+        function showError() {
+            errorMessage.classList.add('show');
+            setTimeout(() => {
+                errorMessage.classList.remove('show');
+            }, 3000);
+        }
+
+        // Redirect į app
+        function redirectToApp() {
+            window.location.href = 'index.html';
+        }
+
+        // Enter key support
+        usernameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                passwordInput.focus();
+            }
+        });
+    </script>
+</body>
+</html>
