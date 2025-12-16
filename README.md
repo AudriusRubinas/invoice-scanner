@@ -119,3 +119,4 @@ GET https://pelningas.app.n8n.cloud/webhook/invoice-csv
 ## 📄 Licencija
 
 © 2025 Pelningas.lt | Sąskaitų skaitytuvas
+
