@@ -1,4 +1,6 @@
-# 🔐 n8n Authentication Workflow Setup
+curl -X POST https://pelningas.app.n8n.cloud/webhook/auth \
+  -H "Content-Type: application/json" \
+  -d '{"username":"test","password":"test123"}'# 🔐 n8n Authentication Workflow Setup
 
 ## 📋 SVARBU: Vartotojai dabar yra n8n, NE GitHub!
 

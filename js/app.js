@@ -37,6 +37,7 @@ const elements = {
     
     sheetLink: document.getElementById('sheet-link'),
     csvBtn: document.getElementById('csv-btn'),
+    clientsBtn: document.getElementById('clients-btn'),
     resetBtn: document.getElementById('reset-btn'),
     retryBtn: document.getElementById('retry-btn'),
     errorMessage: document.getElementById('error-message')
@@ -80,6 +81,14 @@ function setupEventListeners() {
     elements.csvBtn.addEventListener('click', handleCsvDownload);
     elements.resetBtn.addEventListener('click', resetForm);
     elements.retryBtn.addEventListener('click', resetForm);
+    
+    // Clients export button
+    if (elements.clientsBtn) {
+        elements.clientsBtn.addEventListener('click', handleClientsDownload);
+        console.log('✅ Clients button listener attached');
+    } else {
+        console.warn('⚠️ Clients button not found!');
+    }
     
     // Logout button
     const logoutBtn = document.getElementById('logout-btn');
@@ -540,6 +549,193 @@ function generateCsvLocally(invoices) {
     
     console.log('✅ Excel failas sėkmingai sugeneruotas:', fileName);
     console.log('✅ Failas atsisiųstas į Downloads katalogą');
+}
+
+// ============================================
+// KLIENTŲ EKSPORTAS
+// ============================================
+
+// Determine location based on company code format
+function determineLocation(clientCode) {
+    if (!clientCode) {
+        return 'LT'; // default
+    }
+    
+    // Konvertuojame į string jei reikia
+    const code = String(clientCode).trim();
+    
+    // Lietuvos įmonių kodas: 9 skaitmenys
+    // Pvz: 123456789
+    if (/^\d{9}$/.test(code)) {
+        return 'LT';
+    }
+    
+    // Kitu atveju - EU (užsienio įmonė)
+    return 'EU';
+}
+
+// Extract unique clients from invoices
+function extractUniqueClients(invoices) {
+    console.log('📊 ═══════════════════════════════════════');
+    console.log('📊 KLIENTŲ EKSTRAKTAVIMAS');
+    console.log('📊 ═══════════════════════════════════════');
+    console.log('📦 Gautas sąskaitų skaičius:', invoices.length);
+    
+    const clientsMap = new Map();
+    
+    invoices.forEach((invoice, index) => {
+        // Konvertuojame į string, nes gali būti number
+        const clientCode = invoice.clientCode ? String(invoice.clientCode).trim() : '';
+        const clientName = invoice.clientName ? String(invoice.clientName).trim() : '';
+        
+        console.log(`\n📄 Sąskaita #${index + 1}:`, {
+            clientName,
+            clientCode,
+            originalType: typeof invoice.clientCode
+        });
+        
+        // Skip jei nėra kliento kodo arba pavadinimo
+        if (!clientCode && !clientName) {
+            console.log('⚠️ Praleista - nėra kliento duomenų');
+            return;
+        }
+        
+        // Unikalumo raktas - clientCode (jei yra), kitaip clientName
+        const uniqueKey = clientCode || clientName;
+        
+        // Jei jau turime šį klientą - praleisti
+        if (clientsMap.has(uniqueKey)) {
+            console.log('🔄 Dublikatas - praleista (jau turime)');
+            return;
+        }
+        
+        // Pridedame naują klientą
+        const client = {
+            name: clientName,
+            isjuridical: 1,
+            location: determineLocation(clientCode),
+            code: clientCode,
+            vatCode: '' // Tuščias - duomenų nėra
+        };
+        
+        clientsMap.set(uniqueKey, client);
+        console.log('✅ Pridėtas naujas klientas:', client);
+    });
+    
+    const uniqueClients = Array.from(clientsMap.values());
+    
+    console.log('\n═══════════════════════════════════════');
+    console.log('📊 Rezultatas:');
+    console.log('   Iš viso sąskaitų:', invoices.length);
+    console.log('   Unikalių klientų:', uniqueClients.length);
+    console.log('═══════════════════════════════════════\n');
+    
+    return uniqueClients;
+}
+
+// Generate clients Excel file
+function generateClientsExcel(clients) {
+    console.log('📊 ═══════════════════════════════════════');
+    console.log('📊 KLIENTŲ EXCEL EKSPORTAS');
+    console.log('📊 ═══════════════════════════════════════');
+    console.log('📦 Klientų skaičius:', clients.length);
+    console.log('📦 Pilni duomenys:', JSON.stringify(clients, null, 2));
+    
+    // Stulpeliai pagal jūsų specifikaciją
+    const headers = [
+        'name*',         // Kliento pavadinimas (privalomas)
+        'isjuridical*',  // Visada 1 (privalomas)
+        'location*',     // LT arba EU (privalomas)
+        'code',          // Įmonės kodas (neprivalomas)
+        'vatCode'        // PVM kodas (neprivalomas, tuščias)
+    ];
+    
+    console.log('\n📋 Excel stulpeliai:', headers);
+    
+    // Konvertuojame klientus į Excel eilutes
+    const rows = clients.map((client, index) => {
+        console.log(`\n─────────────────────────────────────`);
+        console.log(`👤 KLIENTAS #${index + 1}/${clients.length}`);
+        console.log(`─────────────────────────────────────`);
+        console.log('🔍 Kliento duomenys:', client);
+        
+        const row = [
+            client.name || '',           // name*
+            client.isjuridical || 1,     // isjuridical* (visada 1)
+            client.location || 'LT',     // location* (LT/EU)
+            client.code || '',           // code
+            client.vatCode || ''         // vatCode (tuščias)
+        ];
+        
+        console.log('✅ Sukurta Excel eilutė:');
+        headers.forEach((header, i) => {
+            console.log(`   ${header.padEnd(15)} = ${row[i]}`);
+        });
+        
+        return row;
+    });
+    
+    console.log('\n═══════════════════════════════════════');
+    console.log('📊 Excel duomenys paruošti');
+    console.log('📊 Eilučių skaičius:', rows.length);
+    console.log('═══════════════════════════════════════\n');
+    
+    // Sujungiame header + duomenys
+    const data = [headers, ...rows];
+    
+    // Sukuriame Excel workbook
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Nustatome stulpelių plotį
+    ws['!cols'] = [
+        { wch: 40 },  // name*
+        { wch: 12 },  // isjuridical*
+        { wch: 10 },  // location*
+        { wch: 15 },  // code
+        { wch: 15 }   // vatCode
+    ];
+    
+    // Pridedame worksheet į workbook
+    XLSX.utils.book_append_sheet(wb, ws, 'Klientai');
+    
+    // Generuojame failą
+    const fileName = `klientai_${new Date().toISOString().split('T')[0]}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    console.log('✅ Klientų Excel failas sėkmingai sugeneruotas:', fileName);
+    console.log('✅ Failas atsisiųstas į Downloads katalogą');
+}
+
+// Handle clients download button click
+function handleClientsDownload() {
+    console.log('👥 ═══════════════════════════════════════');
+    console.log('👥 KLIENTŲ EKSPORTAS PRADĖTAS');
+    console.log('👥 ═══════════════════════════════════════');
+    console.log('📦 processedData:', processedData);
+    
+    // Patikrinkite ar turime duomenis
+    if (processedData && processedData.data && processedData.data.invoices) {
+        const invoices = processedData.data.invoices;
+        console.log('✅ Turime', invoices.length, 'sąskaitas');
+        
+        // 1. Ištraukiame unikalius klientus
+        const uniqueClients = extractUniqueClients(invoices);
+        
+        if (uniqueClients.length === 0) {
+            console.warn('⚠️ Nerasta jokių klientų');
+            showError('Nerasta jokių klientų duomenų');
+            return;
+        }
+        
+        // 2. Generuojame Excel
+        generateClientsExcel(uniqueClients);
+        
+        console.log('✅ Klientų eksportas baigtas!');
+    } else {
+        console.error('❌ Nėra apdorotų duomenų');
+        showError('Nėra duomenų eksportui. Pirmiausia apdorokite sąskaitas.');
+    }
 }
 
 // Section Management
